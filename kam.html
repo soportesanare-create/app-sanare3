@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1e33" />
+  <title>SANARÉ · App</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/img/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/img/icon-192.png">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer" />
+
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body data-app-role="kam">
+  <div class="app" role="application" aria-label="SANARÉ móvil">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="toprow">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">
+            <img class="wordmark" src="assets/img/sanare-wordmark.png" alt="SANARÉ" />
+          </div>
+          <div class="titlewrap">
+            <div class="subtitle" id="topSub">Centro oncológico · <span id="rolePill">KAM</span></div>
+          </div>
+        </div>
+
+        <div class="topactions">
+          <div class="pill" title="Estado">
+            <span class="dot" aria-hidden="true"></span>
+            <span style="font-size:12px;color:rgba(30,27,26,.80)">Listo</span>
+          </div>
+          <button class="iconbtn" id="btnQuick" title="Acción rápida" aria-label="Acción rápida">
+            <i class="fa-solid fa-bolt"></i>
+          </button>
+          <button class="iconbtn" id="btnNavToggle" title="Contraer menú" aria-label="Contraer menú">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="searchbar" role="search">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true" style="color:rgba(30,27,26,.45)"></i>
+        <input id="globalSearch" type="text" placeholder="Buscar noticia, sede, fármaco, paciente…" autocomplete="off" />
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="main" id="main">
+
+      <!-- INICIO / NOTICIAS -->
+      <section class="screen active" data-screen="home">
+        <div class="hero">
+          <div class="glow" aria-hidden="true"></div>
+          <div class="hero-grid">
+            <div class="hero-copy">
+              <h1>Bienvenido(a) a SANARÉ</h1>
+              <p>
+                Noticias y operación de centros de infusión, cotizaciones, seguimiento y comisiones.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <div class="card-hd">
+              <div>
+                <h2>Noticias (Centros de infusión)</h2>
+                <div class="muted">Actualizaciones internas y logística</div>
+              </div>
+              <div class="muted" id="newsCount">4</div>
+            </div>
+            <div class="newslist">
+              <div class="newsgrid" id="newsGrid">
+                <!-- injected -->
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-hd">
+              <div>
+                <h2>Resumen del mes</h2>
+                <div class="muted">Comisiones</div>
+              </div>
+              <div class="muted" id="monthLabel"></div>
+            </div>
+            <div class="kpiwrap">
+              <div class="kpis">
+                <div class="kpi">
+                  <div class="v" id="kpi1">—</div>
+                  <div class="l" id="kpi1l">Meta</div>
+                </div>
+                <div class="kpi">
+                  <div class="v" id="kpi2">—</div>
+                  <div class="l" id="kpi2l">Acumulado</div>
+                </div>
+              </div>
+              <div style="margin-top:10px" class="small" id="kpiHint"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COTIZADOR -->
+      <section class="screen" data-screen="quote">
+        <div class="card" style="padding:14px">
+          <div class="card-hd" style="padding:0 0 10px 0">
+            <div>
+              <h2>Cotizador</h2>
+              <div class="muted">Cotizaciones y comparativos</div>
+            </div>
+          </div>
+          <iframe class="embed" title="Cotizador SANARÉ" src="cotizador/index.html"></iframe>
+        </div>
+      </section>
+
+      <!-- PUNTOS / COMISIONES -->
+      <section class="screen" data-screen="points">
+
+        <div id="commKam" class="card" style="padding:14px">
+          <div class="card-hd" style="padding:0 0 10px 0">
+            <div>
+              <h2>Comisiones</h2>
+              <div class="muted">Métrica mensual y cuánto falta para cobrar todo</div>
+            </div>
+          </div>
+
+          <div style="display:grid; gap:12px; grid-template-columns:1fr; align-items:start">
+            <div class="kpis">
+              <div class="kpi">
+                <div class="v" id="kamGoal">$ 0</div>
+                <div class="l">Meta del mes</div>
+              </div>
+              <div class="kpi">
+                <div class="v" id="kamSales">$ 0</div>
+                <div class="l">Ventas del mes</div>
+              </div>
+            </div>
+
+            <div class="kpi" style="background:linear-gradient(180deg, rgba(11,30,51,.06), rgba(255,255,255,.92))">
+              <div style="display:flex; justify-content:space-between; gap:10px; align-items:center">
+                <div>
+                  <div class="v" id="kamProgress">0%</div>
+                  <div class="l">Avance a meta</div>
+                </div>
+                <div style="min-width:140px;text-align:right">
+                  <div class="v" id="kamMissing">$ 0</div>
+                  <div class="l">Faltante</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="padding:14px; border-radius:18px; box-shadow:none">
+              <div class="small" style="margin-bottom:8px">Actualiza tus números (se guarda en el dispositivo)</div>
+              <div class="formrow">
+                <input class="input" id="inpGoal" type="number" min="0" step="1000" placeholder="Meta del mes (MXN)" />
+                <input class="input" id="inpSales" type="number" min="0" step="1000" placeholder="Ventas del mes (MXN)" />
+                <button class="primary" id="btnSaveKam">Guardar</button>
+                <div class="small">Tip: usa solo números (ej. 1200000). Se formatea automáticamente.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PERFIL -->
+      
+      <section class="screen" data-screen="profile">
+        <div class="card" style="padding:14px">
+          <div class="card-hd" style="padding:0 0 10px 0">
+            <div>
+              <h2>Perfil</h2>
+              <div class="muted">Cuenta y personalización</div>
+            </div>
+          </div>
+
+          <div class="formrow">
+            <label class="lbl" for="inpEmail">Correo</label>
+            <input class="input" id="inpEmail" type="email" placeholder="correo@ejemplo.com" autocomplete="email" />
+
+            <label class="lbl" for="inpName">Nombre</label>
+            <input class="input" id="inpName" type="text" placeholder="Tu nombre (opcional)" autocomplete="name" />
+
+            <div class="divider"></div>
+
+            <div class="rowline">
+              <div>
+                <div class="rowtitle">Tonos</div>
+                <div class="small">Claro / Oscuro</div>
+              </div>
+              <button class="toggle" id="btnTheme" type="button" aria-label="Cambiar tonos">
+                <span id="themeLabel">Claro</span>
+                <i class="fa-solid fa-moon" aria-hidden="true"></i>
+              </button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div>
+              <div class="rowtitle">Color de acento</div>
+              <div class="small">Cambia el color de botones y resaltados.</div>
+              <div class="palette" id="accentPalette" role="listbox" aria-label="Colores de acento">
+                <button class="swatch" type="button" data-accent="#0b1e33" style="--sw:#0b1e33" aria-label="Azul SANARÉ"></button>
+                <button class="swatch" type="button" data-accent="#bb968c" style="--sw:#bb968c" aria-label="Rosa"></button>
+                <button class="swatch" type="button" data-accent="#653d2e" style="--sw:#653d2e" aria-label="Cacao"></button>
+                <button class="swatch" type="button" data-accent="#19a974" style="--sw:#19a974" aria-label="Verde"></button>
+                <button class="swatch" type="button" data-accent="#ffb020" style="--sw:#ffb020" aria-label="Ámbar"></button>
+                <button class="swatch" type="button" data-accent="#7c4dff" style="--sw:#7c4dff" aria-label="Morado"></button>
+              </div>
+            </div>
+
+            <button class="primary" id="btnSaveProfile">Guardar</button>
+            <div class="small">Se guarda en este dispositivo.</div>
+          </div>
+        </div>
+      </section>
+</main>
+
+    <!-- Bottom nav -->
+    <nav class="bottomnav" aria-label="Navegación inferior">
+      <div class="navrow">
+        <button class="navbtn active" data-nav="home" aria-label="Inicio">
+          <div class="i"><i class="fa-solid fa-house"></i></div>
+          <span>Inicio</span>
+        </button>
+        <button class="navbtn" data-nav="quote" aria-label="Cotizar">
+          <div class="i"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+          <span>Cotizar</span>
+        </button>
+<button class="navbtn" data-nav="points" aria-label="Puntos/Comisiones">
+          <div class="i"><i class="fa-solid fa-chart-pie"></i></div>
+          <span id="navPointsLabel">Comisiones</span>
+        </button>
+        <button class="navbtn" data-nav="profile" aria-label="Perfil">
+          <div class="i"><i class="fa-solid fa-user"></i></div>
+          <span>Perfil</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+  <script>
+    // Evita cache agresivo cuando estás desarrollando en localhost.
+    if('serviceWorker' in navigator && !['localhost','127.0.0.1'].includes(location.hostname)){
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+    }
+  </script>
+</body>
+</html>
