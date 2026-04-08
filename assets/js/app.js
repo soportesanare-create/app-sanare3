@@ -28,9 +28,9 @@ const newsGrid = $("#newsGrid");
 const newsCount = $("#newsCount");
 
 // Profile
-const inpName = $("#inpName");
-const inpEmail = $("#inpEmail");
-const btnSaveProfile = $("#btnSaveProfile");
+const profileDisplayName = $("#profileDisplayName");
+const profileEmailDisplay = $("#profileEmailDisplay");
+const profileAvatar = $("#profileAvatar");
 const btnTheme = $("#btnTheme");
 const themeLabel = $("#themeLabel");
 const accentPalette = $("#accentPalette");
@@ -44,9 +44,44 @@ const kamSales = $("#kamSales");
 const kamProgress = $("#kamProgress");
 const kamMissing = $("#kamMissing");
 
+// Native quote
+const qPatient = $("#qPatient");
+const qDoctor = $("#qDoctor");
+const qInsurance = $("#qInsurance");
+const qKam = $("#qKam");
+const qIssueDate = $("#qIssueDate");
+const qValidDate = $("#qValidDate");
+const qScheduleDate = $("#qScheduleDate");
+const qAddress = $("#qAddress");
+const qPhone = $("#qPhone");
+const qDx = $("#qDx");
+const qScheme = $("#qScheme");
+const qMedSearch = $("#qMedSearch");
+const qMedSort = $("#qMedSort");
+const qMedSelect = $("#qMedSelect");
+const qMedQty = $("#qMedQty");
+const qAddMed = $("#qAddMed");
+const qMedTableBody = $("#qMedTable tbody");
+const qServSelect = $("#qServSelect");
+const qServQty = $("#qServQty");
+const qServDiscount = $("#qServDiscount");
+const qAddServ = $("#qAddServ");
+const qServTableBody = $("#qServTable tbody");
+const qSubtotal = $("#qSubtotal");
+const qIVA = $("#qIVA");
+const qTotal = $("#qTotal");
+const statMedCount = $("#statMedCount");
+const statServCount = $("#statServCount");
+const statTotal = $("#statTotal");
+const btnQuoteReset = $("#btnQuoteReset");
+const btnQuotePrint = $("#btnQuotePrint");
+const quotePreparedBy = $("#quotePreparedBy");
+const quoteStatus = $("#quoteStatus");
+
 const LS_PROFILE = "sanare_app_profile_v2";
 const LS_THEME = "sanare_app_theme_v1";
 const LS_NAV = "sanare_nav_collapsed_v1";
+const LS_QUOTE = "sanare_native_quote_v1";
 
 function nowMonthLabel(){
   const d = new Date();
@@ -129,16 +164,33 @@ function applyHomeKpis(){
 
 function initProfile(){
   const p = loadJSON(LS_PROFILE);
-  if(inpName) inpName.value = p.name || "";
-  if(inpEmail) inpEmail.value = p.email || "";
+  const nameCandidates = [
+    p.name,
+    p.displayName,
+    p.userName,
+    p.nombre,
+    p.fullName,
+    p.kamName
+  ].filter(Boolean);
+  const emailCandidates = [
+    p.email,
+    p.userEmail,
+    p.correo,
+    p.loginEmail,
+    p.username
+  ].filter(Boolean);
 
-  btnSaveProfile?.addEventListener("click", () => {
-    const pp = loadJSON(LS_PROFILE);
-    pp.name = (inpName?.value || "").trim();
-    pp.email = (inpEmail?.value || "").trim();
-    saveJSON(LS_PROFILE, pp);
-    applyHomeKpis();
-    navigate("home");
+  const name = (nameCandidates[0] || '').trim();
+  const email = (emailCandidates[0] || '').trim();
+  const finalName = name || (email ? email.split('@')[0].replace(/[._-]+/g,' ') : 'KAM SANARÉ');
+  const prettyName = finalName.replace(/\b\w/g, m => m.toUpperCase());
+
+  if(profileDisplayName) profileDisplayName.textContent = prettyName;
+  if(profileEmailDisplay) profileEmailDisplay.textContent = email || 'Sesión iniciada correctamente';
+  if(profileAvatar) profileAvatar.textContent = (prettyName || 'K').trim().charAt(0).toUpperCase();
+
+  $$('[data-quick-nav]').forEach(btn => {
+    btn.addEventListener('click', () => navigate(btn.dataset.quickNav || 'home'));
   });
 }
 
@@ -220,6 +272,284 @@ function initKamCommissions(){
   });
 
   repaint();
+}
+
+
+function getQuoteState(){
+  const empty = {
+    info: {
+      patient:"", doctor:"", insurance:"", kam:"", issueDate:"", validDate:"", scheduleDate:"",
+      address:"", phone:"", dx:"", scheme:""
+    },
+    meds: [],
+    services: []
+  };
+  try{
+    const parsed = JSON.parse(localStorage.getItem(LS_QUOTE) || "null");
+    return parsed && typeof parsed === "object" ? { ...empty, ...parsed, info: { ...empty.info, ...(parsed.info || {}) }, meds: parsed.meds || [], services: parsed.services || [] } : empty;
+  }catch(e){
+    return empty;
+  }
+}
+function saveQuoteState(state){
+  try{ localStorage.setItem(LS_QUOTE, JSON.stringify(state)); }catch(e){}
+}
+function quoteMoney(n){
+  const v = Number(n || 0);
+  return v.toLocaleString("es-MX",{style:"currency", currency:"MXN", maximumFractionDigits:2, minimumFractionDigits:2});
+}
+function quotePhoneForAddress(address){
+  const val = String(address || "");
+  if(val.includes("Toluca")) return "722 197 08 36";
+  if(val.includes("Narvarte")) return "55 5255 8403";
+  return "";
+}
+function quoteToday(offsetDays=0){
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+function initNativeQuote(){
+  if(!qAddress || !window.SANARE_COT_DATA) return;
+  const DATA = window.SANARE_COT_DATA;
+  const state = getQuoteState();
+
+  const profile = loadJSON(LS_PROFILE);
+  if(!state.info.issueDate) state.info.issueDate = quoteToday(0);
+  if(!state.info.validDate) state.info.validDate = quoteToday(15);
+  if(!state.info.kam){
+    state.info.kam = (profile.name || profile.email || "Corporativo").trim();
+  }
+
+  qAddress.innerHTML = "";
+  (DATA.direcciones || []).forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = d;
+    qAddress.appendChild(opt);
+  });
+
+  if(!state.info.address && DATA.direcciones?.length){
+    state.info.address = DATA.direcciones[0];
+  }
+  state.info.phone = quotePhoneForAddress(state.info.address);
+
+  const applyInfoToFields = () => {
+    qPatient && (qPatient.value = state.info.patient || "");
+    qDoctor && (qDoctor.value = state.info.doctor || "");
+    qInsurance && (qInsurance.value = state.info.insurance || "");
+    qKam && (qKam.value = state.info.kam || "");
+    qIssueDate && (qIssueDate.value = state.info.issueDate || "");
+    qValidDate && (qValidDate.value = state.info.validDate || "");
+    qScheduleDate && (qScheduleDate.value = state.info.scheduleDate || "");
+    qAddress && (qAddress.value = state.info.address || "");
+    qPhone && (qPhone.value = state.info.phone || "");
+    qDx && (qDx.value = state.info.dx || "");
+    qScheme && (qScheme.value = state.info.scheme || "");
+    if(quotePreparedBy){
+      quotePreparedBy.textContent = `Cotización preparada por ${state.info.kam || "Corporativo"}`;
+    }
+  };
+
+  const bindInfo = (el, key, formatter=null) => {
+    el?.addEventListener("input", () => {
+      state.info[key] = formatter ? formatter(el.value) : el.value;
+      if(key === "kam" && quotePreparedBy){
+        quotePreparedBy.textContent = `Cotización preparada por ${state.info.kam || "Corporativo"}`;
+      }
+      saveQuoteState(state);
+      updateQuoteStatus();
+    });
+    el?.addEventListener("change", () => {
+      state.info[key] = formatter ? formatter(el.value) : el.value;
+      if(key === "kam" && quotePreparedBy){
+        quotePreparedBy.textContent = `Cotización preparada por ${state.info.kam || "Corporativo"}`;
+      }
+      saveQuoteState(state);
+      updateQuoteStatus();
+    });
+  };
+
+  const medSource = (DATA.medicamentos || []).filter(m => m && m.nombre && !String(m.nombre).includes("Nombre del Artículo"));
+  const servSource = (DATA.servicios || []).filter(s => s && s.servicio);
+
+  function renderMedOptions(){
+    if(!qMedSelect) return;
+    const term = (qMedSearch?.value || "").toLowerCase().trim();
+    const sort = qMedSort?.value || "nombre";
+    let list = medSource.filter(m => String(m.nombre).toLowerCase().includes(term) || String(m.ean || "").toLowerCase().includes(term));
+    list.sort((a,b) => sort === "precio" ? Number(b.precio||0) - Number(a.precio||0) : String(a.nombre).localeCompare(String(b.nombre), "es"));
+    qMedSelect.innerHTML = "";
+    list.slice(0, 250).forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = JSON.stringify({ean:m.ean, nombre:m.nombre, precio:Number(m.precio||0)});
+      opt.textContent = `${m.ean || "—"} — ${m.nombre} — ${quoteMoney(m.precio || 0)}`;
+      qMedSelect.appendChild(opt);
+    });
+  }
+
+  function renderServOptions(){
+    if(!qServSelect) return;
+    qServSelect.innerHTML = "";
+    servSource
+      .slice()
+      .sort((a,b)=> String(a.servicio).localeCompare(String(b.servicio), "es"))
+      .forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = JSON.stringify({servicio:s.servicio, precio:Number(s.precio||0)});
+        opt.textContent = `${s.servicio} — ${quoteMoney(s.precio || 0)}`;
+        qServSelect.appendChild(opt);
+      });
+  }
+
+  function totals(){
+    const medSub = state.meds.reduce((acc, x) => acc + (Number(x.precio)||0) * (Number(x.qty)||0), 0);
+    const servSub = state.services.reduce((acc, x) => acc + ((Number(x.precio)||0) * (Number(x.qty)||0) * (1 - (Number(x.discount)||0) / 100)), 0);
+    const iva = servSub * 0.16;
+    const total = medSub + servSub + iva;
+    return { medSub, servSub, iva, total };
+  }
+
+  function renderTables(){
+    if(qMedTableBody){
+      qMedTableBody.innerHTML = state.meds.map((item, idx) => `
+        <tr>
+          <td>${item.nombre}</td>
+          <td>${item.ean || "—"}</td>
+          <td>${item.qty}</td>
+          <td>${quoteMoney(item.precio)}</td>
+          <td>${quoteMoney((Number(item.precio)||0) * (Number(item.qty)||0))}</td>
+          <td><button class="quote-remove" type="button" data-del-med="${idx}">✕</button></td>
+        </tr>
+      `).join("");
+    }
+
+    if(qServTableBody){
+      qServTableBody.innerHTML = state.services.map((item, idx) => {
+        const lineTotal = (Number(item.precio)||0) * (Number(item.qty)||0) * (1 - (Number(item.discount)||0) / 100);
+        return `
+          <tr>
+            <td>${item.servicio}</td>
+            <td>${item.qty}</td>
+            <td>${quoteMoney(item.precio)}</td>
+            <td>${Number(item.discount)||0}%</td>
+            <td>${quoteMoney(lineTotal)}</td>
+            <td><button class="quote-remove" type="button" data-del-serv="${idx}">✕</button></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    const t = totals();
+    qSubtotal && (qSubtotal.textContent = quoteMoney(t.medSub + t.servSub));
+    qIVA && (qIVA.textContent = quoteMoney(t.iva));
+    qTotal && (qTotal.textContent = quoteMoney(t.total));
+    statMedCount && (statMedCount.textContent = String(state.meds.length));
+    statServCount && (statServCount.textContent = String(state.services.length));
+    statTotal && (statTotal.textContent = quoteMoney(t.total));
+
+    qMedTableBody?.querySelectorAll("[data-del-med]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        state.meds.splice(Number(btn.dataset.delMed), 1);
+        saveQuoteState(state);
+        renderTables();
+        updateQuoteStatus();
+      });
+    });
+    qServTableBody?.querySelectorAll("[data-del-serv]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        state.services.splice(Number(btn.dataset.delServ), 1);
+        saveQuoteState(state);
+        renderTables();
+        updateQuoteStatus();
+      });
+    });
+  }
+
+  function updateQuoteStatus(){
+    const ready = Boolean((state.info.patient || "").trim()) && (state.meds.length > 0 || state.services.length > 0);
+    if(quoteStatus){
+      quoteStatus.textContent = ready ? "Cotización en progreso" : "Lista para capturar";
+    }
+  }
+
+  qMedSearch?.addEventListener("input", renderMedOptions);
+  qMedSort?.addEventListener("change", renderMedOptions);
+
+  qAddMed?.addEventListener("click", () => {
+    if(!qMedSelect?.value) return;
+    const item = JSON.parse(qMedSelect.value);
+    state.meds.push({ ...item, qty: Math.max(1, Number(qMedQty?.value || 1)) });
+    saveQuoteState(state);
+    renderTables();
+    updateQuoteStatus();
+  });
+
+  qServSelect?.addEventListener("change", () => {
+    try{
+      const item = JSON.parse(qServSelect.value || "{}");
+      qServDiscount.value = String(String(item.servicio || "").toUpperCase().includes("INSUMOS Y SERVICIO DE INFUSIÓN") ? 50 : 0);
+    }catch(e){}
+  });
+  qAddServ?.addEventListener("click", () => {
+    if(!qServSelect?.value) return;
+    const item = JSON.parse(qServSelect.value);
+    state.services.push({
+      ...item,
+      qty: Math.max(1, Number(qServQty?.value || 1)),
+      discount: Math.max(0, Math.min(100, Number(qServDiscount?.value || 0)))
+    });
+    saveQuoteState(state);
+    renderTables();
+    updateQuoteStatus();
+  });
+
+  btnQuoteReset?.addEventListener("click", () => {
+    const profileData = loadJSON(LS_PROFILE);
+    state.info = {
+      patient:"", doctor:"", insurance:"",
+      kam: (profileData.name || profileData.email || "Corporativo").trim(),
+      issueDate: quoteToday(0),
+      validDate: quoteToday(15),
+      scheduleDate:"",
+      address: DATA.direcciones?.[0] || "",
+      phone: quotePhoneForAddress(DATA.direcciones?.[0] || ""),
+      dx:"", scheme:""
+    };
+    state.meds = [];
+    state.services = [];
+    saveQuoteState(state);
+    applyInfoToFields();
+    renderTables();
+    updateQuoteStatus();
+  });
+
+  btnQuotePrint?.addEventListener("click", () => window.print());
+
+  qAddress?.addEventListener("change", () => {
+    state.info.address = qAddress.value;
+    state.info.phone = quotePhoneForAddress(qAddress.value);
+    qPhone && (qPhone.value = state.info.phone);
+    saveQuoteState(state);
+  });
+
+  bindInfo(qPatient, "patient");
+  bindInfo(qDoctor, "doctor");
+  bindInfo(qInsurance, "insurance");
+  bindInfo(qKam, "kam");
+  bindInfo(qIssueDate, "issueDate");
+  bindInfo(qValidDate, "validDate");
+  bindInfo(qScheduleDate, "scheduleDate");
+  bindInfo(qDx, "dx");
+  bindInfo(qScheme, "scheme");
+
+  applyInfoToFields();
+  renderMedOptions();
+  renderServOptions();
+  renderTables();
+  updateQuoteStatus();
 }
 
 function initNews(){
@@ -352,13 +682,13 @@ function setNavCollapsed(collapsed, isUserAction=false){
 }
 
 function initNavCollapse(){
-  // default: collapse on landscape, expand on portrait
+  // Mantener etiquetas visibles por defecto.
   let pref = null;
   try{ pref = localStorage.getItem(LS_NAV); }catch(e){}
   if(pref === "1" || pref === "0"){
     setNavCollapsed(pref === "1", false);
   }else{
-    setNavCollapsed(window.matchMedia("(orientation: landscape)").matches, false);
+    setNavCollapsed(false, false);
   }
 
   btnNavToggle?.addEventListener("click", () => {
@@ -367,30 +697,61 @@ function initNavCollapse(){
   });
 
   window.addEventListener("resize", () => {
-    // If user didn't set pref, auto-collapse by orientation
-    let pref2 = null;
-    try{ pref2 = localStorage.getItem(LS_NAV); }catch(e){}
-    if(pref2 !== "1" && pref2 !== "0"){
-      setNavCollapsed(window.matchMedia("(orientation: landscape)").matches, false);
-    }else{
-      syncNavSpace();
-      resizeEmbeds();
-    }
+    syncNavSpace();
+    resizeEmbeds();
   }, {passive:true});
+}
+
+function styleSeamlessEmbed(frame){
+  if(!frame || frame.dataset.styled === "1") return;
+  try{
+    const doc = frame.contentDocument;
+    if(!doc) return;
+    const style = doc.createElement("style");
+    style.textContent = `
+      html, body{background:transparent !important; margin:0 !important; overflow:visible !important;}
+      body{padding:0 !important;}
+      main#cotizador{max-width:none !important; margin:0 !important; border-radius:20px !important; box-shadow:none !important; border:1px solid rgba(101,61,46,.10) !important;}
+      #btnPDF{position:sticky; bottom:12px;}
+    `;
+    doc.head.appendChild(style);
+    frame.dataset.styled = "1";
+  }catch(e){}
 }
 
 function resizeEmbeds(){
   const embeds = $$(".embed");
   if(!embeds.length) return;
 
-  const navH = bottomNav ? bottomNav.getBoundingClientRect().height : 0;
-  const safeBottom = Math.ceil(navH) + 18;
-
   embeds.forEach(el => {
-    // Only resize if its section is active (or if element is within active section)
     const screen = el.closest("[data-screen]");
     if(screen && !screen.classList.contains("active")) return;
 
+    let applied = false;
+    if(el.dataset.seamless === "true"){
+      try{
+        styleSeamlessEmbed(el);
+        const doc = el.contentDocument;
+        if(doc?.body){
+          const body = doc.body;
+          const html = doc.documentElement;
+          const inner = Math.max(
+            body.scrollHeight || 0,
+            body.offsetHeight || 0,
+            html.scrollHeight || 0,
+            html.offsetHeight || 0,
+            720
+          );
+          el.style.height = `${inner + 12}px`;
+          applied = true;
+        }
+      }catch(e){}
+    }
+
+    if(applied) return;
+
+    const navH = bottomNav ? bottomNav.getBoundingClientRect().height : 0;
+    const safeBottom = Math.ceil(navH) + 18;
     const r = el.getBoundingClientRect();
     const available = Math.floor(window.innerHeight - r.top - safeBottom);
     const h = Math.max(320, available);
@@ -404,6 +765,7 @@ function main(){
   initProfile();
   initThemeControls();
   initKamCommissions();
+  initNativeQuote();
   initNews();
   initSearch();
   initNavCollapse();
@@ -415,7 +777,11 @@ function main(){
   resizeEmbeds();
 
   // resize embeds after iframes load
-  $$(".embed").forEach(f => f.addEventListener("load", () => setTimeout(resizeEmbeds, 50)));
+  $$(".embed").forEach(f => f.addEventListener("load", () => { styleSeamlessEmbed(f); setTimeout(resizeEmbeds, 80); setTimeout(resizeEmbeds, 300); }));
+
+  setTimeout(resizeEmbeds, 250);
+  setTimeout(resizeEmbeds, 1000);
 }
+
 
 document.addEventListener("DOMContentLoaded", main);

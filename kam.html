@@ -110,18 +110,168 @@
         </div>
       </section>
 
+      
       <!-- COTIZADOR -->
       <section class="screen" data-screen="quote">
-        <div class="card" style="padding:14px">
-          <div class="card-hd" style="padding:0 0 10px 0">
+        <div class="card quote-shell">
+          <div class="card-hd quote-head">
             <div>
-              <h2>Cotizador</h2>
-              <div class="muted">Cotizaciones y comparativos</div>
+              <h2>Cotizador SANARÉ</h2>
+              <div class="muted">Versión interna KAM para capturar, comparar y cotizar dentro de la app</div>
+            </div>
+            <div class="quote-head-actions">
+              <button class="toggle quote-mini-btn" id="btnQuoteReset" type="button">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>Limpiar</span>
+              </button>
+              <button class="primary quote-print-btn" id="btnQuotePrint" type="button">Generar</button>
             </div>
           </div>
-          <iframe class="embed" title="Cotizador SANARÉ" src="cotizador/index.html"></iframe>
+
+          <div class="quote-banner">
+            <div>
+              <strong id="quotePreparedBy">Cotización preparada por Corporativo</strong>
+              <div class="small">Esta cotización es únicamente de consulta y no es válida para autorización final; requiere validación de BI y del equipo químico antes de emitirse.</div>
+            </div>
+            <div class="quote-pill" id="quoteStatus">Lista para capturar</div>
+          </div>
+
+          <div class="quote-grid">
+            <div class="quote-form card-flat">
+              <div class="section-title">Datos generales</div>
+              <div class="quote-fields">
+                <div>
+                  <label class="lbl" for="qPatient">Nombre del paciente</label>
+                  <input class="input" id="qPatient" type="text" placeholder="Nombre del paciente" />
+                </div>
+                <div>
+                  <label class="lbl" for="qDoctor">Nombre del médico</label>
+                  <input class="input" id="qDoctor" type="text" placeholder="Nombre del médico" />
+                </div>
+                <div>
+                  <label class="lbl" for="qInsurance">Aseguradora</label>
+                  <input class="input" id="qInsurance" type="text" placeholder="Pago de bolsillo" />
+                </div>
+                <div>
+                  <label class="lbl" for="qKam">KAM / Realizado por</label>
+                  <input class="input" id="qKam" type="text" placeholder="Corporativo / Nombre" />
+                </div>
+                <div>
+                  <label class="lbl" for="qIssueDate">Fecha de emisión</label>
+                  <input class="input" id="qIssueDate" type="date" />
+                </div>
+                <div>
+                  <label class="lbl" for="qValidDate">Válido hasta</label>
+                  <input class="input" id="qValidDate" type="date" />
+                </div>
+                <div>
+                  <label class="lbl" for="qScheduleDate">Fecha de programación</label>
+                  <input class="input" id="qScheduleDate" type="date" />
+                </div>
+                <div>
+                  <label class="lbl" for="qAddress">Sede</label>
+                  <select class="input" id="qAddress"></select>
+                </div>
+                <div class="quote-full">
+                  <label class="lbl" for="qPhone">Teléfono de sede</label>
+                  <input class="input" id="qPhone" type="text" placeholder="Teléfono de la sede" readonly />
+                </div>
+                <div class="quote-full">
+                  <label class="lbl" for="qDx">DX / Comentarios</label>
+                  <textarea class="input quote-area" id="qDx" placeholder="Diagnóstico / comentarios"></textarea>
+                </div>
+                <div class="quote-full">
+                  <label class="lbl" for="qScheme">Esquema o tratamiento</label>
+                  <input class="input" id="qScheme" type="text" placeholder="Ej. OXALIPLATINO" />
+                </div>
+              </div>
+            </div>
+
+            <div class="quote-panel card-flat">
+              <div class="section-title">Resumen rápido</div>
+              <div class="quote-stats">
+                <div class="quote-stat">
+                  <div class="small">Medicamentos</div>
+                  <strong id="statMedCount">0</strong>
+                </div>
+                <div class="quote-stat">
+                  <div class="small">Servicios</div>
+                  <strong id="statServCount">0</strong>
+                </div>
+                <div class="quote-stat">
+                  <div class="small">Total</div>
+                  <strong id="statTotal">$ 0</strong>
+                </div>
+              </div>
+
+              <div class="quote-hint">
+                Captura al paciente, agrega medicamentos y servicios, y genera el PDF desde esta misma vista.
+              </div>
+
+              <div class="mini-list compact">
+                <div class="mini-item"><span>1</span><div>Busca medicamentos por nombre o código.</div></div>
+                <div class="mini-item"><span>2</span><div>Aplica servicios con descuento cuando sea necesario.</div></div>
+                <div class="mini-item"><span>3</span><div>El total calcula IVA solo sobre servicios.</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="quote-grid lower">
+            <div class="card-flat">
+              <div class="section-title">Medicamentos</div>
+              <div class="toolbar-grid">
+                <input class="input" id="qMedSearch" type="text" placeholder="Buscar medicamento o código..." />
+                <select class="input" id="qMedSort">
+                  <option value="nombre">Ordenar A–Z</option>
+                  <option value="precio">Ordenar por precio</option>
+                </select>
+              </div>
+              <div class="toolbar-grid add-row">
+                <select class="input" id="qMedSelect"></select>
+                <input class="input qty" id="qMedQty" type="number" min="1" value="1" />
+                <button class="primary toolbar-btn" id="qAddMed" type="button">Agregar medicamento</button>
+              </div>
+              <div class="table-wrap">
+                <table class="quote-table" id="qMedTable">
+                  <thead>
+                    <tr><th>Medicamento</th><th>Código</th><th>Cant.</th><th>P. unitario</th><th>Subtotal</th><th></th></tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card-flat">
+              <div class="section-title">Servicios</div>
+              <div class="toolbar-grid add-row service-row">
+                <select class="input" id="qServSelect"></select>
+                <input class="input qty" id="qServQty" type="number" min="1" value="1" />
+                <input class="input qty" id="qServDiscount" type="number" min="0" max="100" value="0" placeholder="Desc. %" />
+                <button class="primary toolbar-btn" id="qAddServ" type="button">Agregar servicio</button>
+              </div>
+              <div class="table-wrap">
+                <table class="quote-table" id="qServTable">
+                  <thead>
+                    <tr><th>Servicio</th><th>Cant.</th><th>P. unitario</th><th>Desc.</th><th>Total</th><th></th></tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+
+              <div class="totals-card">
+                <div><span>Subtotal</span><strong id="qSubtotal">$ 0</strong></div>
+                <div><span>IVA servicios (16%)</span><strong id="qIVA">$ 0</strong></div>
+                <div class="grand"><span>TOTAL</span><strong id="qTotal">$ 0</strong></div>
+              </div>
+
+              <p class="quote-legal">
+                La presente cotización es únicamente de consulta interna y no constituye una propuesta válida para autorización final. Requiere validación previa de BI y del equipo químico. Cualquier ajuste clínico, operativo o económico podrá modificar los importes mostrados; el IVA aplica únicamente sobre servicios.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
+
 
       <!-- PUNTOS / COMISIONES -->
       <section class="screen" data-screen="points">
@@ -175,52 +325,90 @@
       <!-- PERFIL -->
       
       <section class="screen" data-screen="profile">
-        <div class="card" style="padding:14px">
+        <div class="card profile-pro" style="padding:14px">
           <div class="card-hd" style="padding:0 0 10px 0">
             <div>
               <h2>Perfil</h2>
-              <div class="muted">Cuenta y personalización</div>
+              <div class="muted">Sesión activa, tareas y personalización</div>
             </div>
           </div>
 
-          <div class="formrow">
-            <label class="lbl" for="inpEmail">Correo</label>
-            <input class="input" id="inpEmail" type="email" placeholder="correo@ejemplo.com" autocomplete="email" />
-
-            <label class="lbl" for="inpName">Nombre</label>
-            <input class="input" id="inpName" type="text" placeholder="Tu nombre (opcional)" autocomplete="name" />
-
-            <div class="divider"></div>
-
-            <div class="rowline">
-              <div>
-                <div class="rowtitle">Tonos</div>
-                <div class="small">Claro / Oscuro</div>
-              </div>
-              <button class="toggle" id="btnTheme" type="button" aria-label="Cambiar tonos">
-                <span id="themeLabel">Claro</span>
-                <i class="fa-solid fa-moon" aria-hidden="true"></i>
-              </button>
-            </div>
-
-            <div class="divider"></div>
-
+          <div class="profile-hero">
+            <div class="profile-avatar" id="profileAvatar">K</div>
             <div>
-              <div class="rowtitle">Color de acento</div>
-              <div class="small">Cambia el color de botones y resaltados.</div>
-              <div class="palette" id="accentPalette" role="listbox" aria-label="Colores de acento">
-                <button class="swatch" type="button" data-accent="#0b1e33" style="--sw:#0b1e33" aria-label="Azul SANARÉ"></button>
-                <button class="swatch" type="button" data-accent="#bb968c" style="--sw:#bb968c" aria-label="Rosa"></button>
-                <button class="swatch" type="button" data-accent="#653d2e" style="--sw:#653d2e" aria-label="Cacao"></button>
-                <button class="swatch" type="button" data-accent="#19a974" style="--sw:#19a974" aria-label="Verde"></button>
-                <button class="swatch" type="button" data-accent="#ffb020" style="--sw:#ffb020" aria-label="Ámbar"></button>
-                <button class="swatch" type="button" data-accent="#7c4dff" style="--sw:#7c4dff" aria-label="Morado"></button>
+              <div class="profile-greeting">Hola, <span id="profileDisplayName">KAM SANARÉ</span></div>
+              <div class="small" id="profileEmailDisplay">Sesión iniciada correctamente</div>
+              <div class="profile-badge"><i class="fa-solid fa-circle-check"></i> Acceso activo</div>
+            </div>
+          </div>
+
+          <div class="task-grid">
+            <button class="task-card" type="button" data-quick-nav="quote">
+              <div class="task-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+              <div>
+                <strong>Generar cotización</strong>
+                <div class="small">Crea propuestas y comparativos para pacientes.</div>
+              </div>
+            </button>
+
+            <button class="task-card" type="button" data-quick-nav="points">
+              <div class="task-icon"><i class="fa-solid fa-chart-line"></i></div>
+              <div>
+                <strong>Ver mis metas</strong>
+                <div class="small">Consulta avance, faltante y comisiones del mes.</div>
+              </div>
+            </button>
+
+            <button class="task-card" type="button" data-quick-nav="home">
+              <div class="task-icon"><i class="fa-solid fa-user-plus"></i></div>
+              <div>
+                <strong>Registrar paciente</strong>
+                <div class="small">Da seguimiento comercial y operativo del día.</div>
+              </div>
+            </button>
+          </div>
+
+          <div class="mini-list">
+            <div class="mini-item">
+              <div>
+                <div class="rowtitle">Tareas sugeridas</div>
+                <div class="small">Una vista más ejecutiva al entrar a la app.</div>
               </div>
             </div>
-
-            <button class="primary" id="btnSaveProfile">Guardar</button>
-            <div class="small">Se guarda en este dispositivo.</div>
+            <div class="mini-item"><span>1</span><div>Generar cotización o actualizar una propuesta pendiente.</div></div>
+            <div class="mini-item"><span>2</span><div>Revisar ventas del mes y cuánto falta para la meta.</div></div>
+            <div class="mini-item"><span>3</span><div>Consultar noticias, operación y seguimiento comercial.</div></div>
           </div>
+
+          <div class="divider"></div>
+
+          <div class="rowline">
+            <div>
+              <div class="rowtitle">Tonos</div>
+              <div class="small">Claro / Oscuro</div>
+            </div>
+            <button class="toggle" id="btnTheme" type="button" aria-label="Cambiar tonos">
+              <span id="themeLabel">Claro</span>
+              <i class="fa-solid fa-moon" aria-hidden="true"></i>
+            </button>
+          </div>
+
+          <div class="divider"></div>
+
+          <div>
+            <div class="rowtitle">Color de acento</div>
+            <div class="small">Cambia el color de botones y resaltados.</div>
+            <div class="palette" id="accentPalette" role="listbox" aria-label="Colores de acento">
+              <button class="swatch" type="button" data-accent="#0b1e33" style="--sw:#0b1e33" aria-label="Azul SANARÉ"></button>
+              <button class="swatch" type="button" data-accent="#bb968c" style="--sw:#bb968c" aria-label="Rosa"></button>
+              <button class="swatch" type="button" data-accent="#653d2e" style="--sw:#653d2e" aria-label="Cacao"></button>
+              <button class="swatch" type="button" data-accent="#19a974" style="--sw:#19a974" aria-label="Verde"></button>
+              <button class="swatch" type="button" data-accent="#ffb020" style="--sw:#ffb020" aria-label="Ámbar"></button>
+              <button class="swatch" type="button" data-accent="#7c4dff" style="--sw:#7c4dff" aria-label="Morado"></button>
+            </div>
+          </div>
+
+          <div class="small" style="margin-top:12px">La sesión se identifica automáticamente con los datos de acceso guardados en el dispositivo.</div>
         </div>
       </section>
 </main>
@@ -248,6 +436,7 @@
     </nav>
   </div>
 
+  <script src="assets/js/cotizador-data.js"></script>
   <script src="assets/js/app.js"></script>
   <script>
     // Evita cache agresivo cuando estás desarrollando en localhost.
