@@ -536,17 +536,22 @@ function initNativeQuote(){
     const target = document.querySelector(".quote-shell");
     
     html2canvas(target, {
-      scale: 2,
+      scale: 3,
       useCORS: true,
+      windowWidth: 1100,
       onclone: (clonedDoc) => {
         // Ocultar botones de acción y controles durante la captura
         clonedDoc.querySelectorAll('.quote-head-actions, .toolbar-grid, .quote-remove, .bottomnav').forEach(el => el.style.display = 'none');
-        // Quitar sombras y bordes extraños para que se vea más limpio
+        // Quitar sombras y forzar vista de escritorio
         const qShell = clonedDoc.querySelector(".quote-shell");
         if(qShell){
+           qShell.style.width = "1100px";
+           qShell.style.maxWidth = "none";
            qShell.style.boxShadow = "none";
            qShell.style.border = "none";
            qShell.style.margin = "0";
+           qShell.style.padding = "24px";
+           qShell.style.background = "#ffffff";
         }
       }
     }).then(canvas => {
