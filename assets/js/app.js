@@ -75,6 +75,7 @@ const statServCount = $("#statServCount");
 const statTotal = $("#statTotal");
 const btnQuoteReset = $("#btnQuoteReset");
 const btnQuotePrint = $("#btnQuotePrint");
+const btnQuoteImg = $("#btnQuoteImg");
 const quotePreparedBy = $("#quotePreparedBy");
 const quoteStatus = $("#quoteStatus");
 
@@ -527,6 +528,55 @@ function initNativeQuote(){
   });
 
   btnQuotePrint?.addEventListener("click", () => window.print());
+
+  btnQuoteImg?.addEventListener("click", () => {
+    if(typeof html2canvas === 'undefined') return alert("Librería no cargada");
+    
+    // Contenedor principal de la cotización para la captura
+    const target = document.querySelector(".quote-shell");
+    
+    html2canvas(target, {
+      scale: 2,
+      useCORS: true,
+      onclone: (clonedDoc) => {
+        // Ocultar botones de acción y controles durante la captura
+        clonedDoc.querySelectorAll('.quote-head-actions, .toolbar-grid, .quote-remove, .bottomnav').forEach(el => el.style.display = 'none');
+        // Quitar sombras y bordes extraños para que se vea más limpio
+        const qShell = clonedDoc.querySelector(".quote-shell");
+        if(qShell){
+           qShell.style.boxShadow = "none";
+           qShell.style.border = "none";
+           qShell.style.margin = "0";
+        }
+      }
+    }).then(canvas => {
+      canvas.toBlob(blob => {
+         let paciente = state.info.patient || "Paciente";
+         let fecha = state.info.issueDate || new Date().toISOString().split("T")[0];
+         paciente = paciente.replace(/[^a-z0-9]/gi, "_");
+         fecha = fecha.replace(/[^0-9\-]/g, "_");
+         const nombreArchivo = `Cotizacion_${paciente}_${fecha}.png`;
+         
+         const file = new File([blob], nombreArchivo, { type: 'image/png' });
+         if (navigator.canShare && navigator.canShare({ files: [file] })) {
+             navigator.share({
+                 files: [file],
+                 title: 'Cotización SANARÉ',
+                 text: 'Adjunto cotización generada en la app.'
+             }).catch(console.error);
+         } else {
+             const url = URL.createObjectURL(blob);
+             const a = document.createElement("a");
+             a.href = url;
+             a.download = nombreArchivo;
+             document.body.appendChild(a);
+             a.click();
+             document.body.removeChild(a);
+             URL.revokeObjectURL(url);
+         }
+      }, "image/png");
+    });
+  });
 
   qAddress?.addEventListener("change", () => {
     state.info.address = qAddress.value;

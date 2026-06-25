@@ -146,59 +146,118 @@
   de lo contrario se cobrará el medicamento y los servicios asociados al medicamento; 
   La presente cotización está sujeta a cambios si el médico tratante así lo indica.
 </p>
-<button id="btnPDF">Descargar PDF</button>
+<div id="botones-accion" style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+  <button id="btnPDF">Descargar PDF</button>
+  <button id="btnImg" style="background-color: #25D366; color: white;">Compartir Imagen</button>
+</div>
     </section>
   </main>
 
   <script src="app.js"></script>
 
-  <!-- Librerías para PDF -->
+  <!-- Librerías para PDF e Imágenes -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <script>
   document.addEventListener("DOMContentLoaded", function() {
-    const btn = document.getElementById("btnPDF");
-    if (!btn) return;
+    const btnPDF = document.getElementById("btnPDF");
+    const btnImg = document.getElementById("btnImg");
 
-    btn.addEventListener("click", function() {
-      const { jsPDF } = window.jspdf;
-      html2canvas(document.getElementById("cotizador"), { 
-        scale: 2, 
-        useCORS: true,
-        onclone: (clonedDoc) => {
-          clonedDoc.querySelectorAll(
-            '#buscarMed, #ordenMed, #selMedicamento, #cantMed, #selServicio, #cantServ, #descServ, #addMed, #addServ, .btn-eliminar, #btnPDF, table button'
-          ).forEach(el => el.style.display = 'none');
-        }
-      }).then(function(canvas) {
-        const imgData = canvas.toDataURL("image/png");
-        const pdf = new jsPDF("p", "mm", "a4");
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-
-        let imgWidth = pageWidth;
-        let imgHeight = (canvas.height * imgWidth) / canvas.width;
-        if (imgHeight > pageHeight) {
-          const ratio = pageHeight / imgHeight;
-          imgWidth *= ratio;
-          imgHeight *= ratio;
-        }
-
-        const x = (pageWidth - imgWidth) / 2;
-        pdf.addImage(imgData, "PNG", x, 0, imgWidth, imgHeight);
-
-        // Datos dinámicos
+    function getFileName(extension) {
         let paciente = document.getElementById("paciente").value || "Paciente";
         let fecha = document.getElementById("fechaEmision").value || new Date().toISOString().split("T")[0];
-
         paciente = paciente.replace(/[^a-z0-9]/gi, "_");
         fecha = fecha.replace(/[^0-9\-]/g, "_");
+        return `Sanare_${paciente}_${fecha}.${extension}`;
+    }
 
-        let nombreArchivo = `Sanare_${paciente}_${fecha}.pdf`;
-        pdf.save(nombreArchivo);
-      });
-    });
+    function captureCanvas() {
+        return html2canvas(document.getElementById("cotizador"), { 
+            scale: 2, 
+            useCORS: true,
+            onclone: (clonedDoc) => {
+              clonedDoc.querySelectorAll(
+                '#buscarMed, #ordenMed, #selMedicamento, #cantMed, #selServicio, #cantServ, #descServ, #addMed, #addServ, .btn-eliminar, #botones-accion, table button'
+              ).forEach(el => el.style.display = 'none');
+            }
+        });
+    }
+
+    if (btnPDF) {
+        btnPDF.addEventListener("click", function() {
+          const { jsPDF } = window.jspdf;
+          captureCanvas().then(function(canvas) {
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF("p", "mm", "a4");
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            let imgWidth = pageWidth;
+            let imgHeight = (canvas.height * imgWidth) / canvas.width;
+            if (imgHeight > pageHeight) {
+              const ratio = pageHeight / imgHeight;
+              imgWidth *= ratio;
+              imgHeight *= ratio;
+            }
+
+            const x = (pageWidth - imgWidth) / 2;
+            pdf.addImage(imgData, "PNG", x, 0, imgWidth, imgHeight);
+
+            const nombreArchivo = getFileName("pdf");
+            const pdfBlob = pdf.output('blob');
+            const file = new File([pdfBlob], nombreArchivo, { type: 'application/pdf' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                navigator.share({
+                    files: [file],
+                    title: 'Cotización Sanare',
+                    text: 'Adjunto cotización generada.'
+                }).catch((err) => {
+                    console.error(err);
+                    pdf.save(nombreArchivo);
+                });
+            } else {
+                pdf.save(nombreArchivo);
+            }
+          });
+        });
+    }
+
+    if (btnImg) {
+        btnImg.addEventListener("click", function() {
+          captureCanvas().then(function(canvas) {
+             canvas.toBlob(function(blob) {
+                 const nombreArchivo = getFileName("png");
+                 const file = new File([blob], nombreArchivo, { type: 'image/png' });
+
+                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                     navigator.share({
+                         files: [file],
+                         title: 'Cotización Sanare',
+                         text: 'Adjunto cotización generada.'
+                     }).catch((err) => {
+                         console.error(err);
+                         fallbackDownload(blob, nombreArchivo);
+                     });
+                 } else {
+                     fallbackDownload(blob, nombreArchivo);
+                 }
+             }, "image/png");
+          });
+        });
+    }
+
+    function fallbackDownload(blob, nombreArchivo) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = nombreArchivo;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
   });
   </script>
 
