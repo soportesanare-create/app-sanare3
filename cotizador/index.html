@@ -180,6 +180,45 @@
               clonedDoc.querySelectorAll(
                 '#buscarMed, #ordenMed, #selMedicamento, #cantMed, #selServicio, #cantServ, #descServ, #addMed, #addServ, .btn-eliminar, #botones-accion, table button'
               ).forEach(el => el.style.display = 'none');
+
+              // Transformar inputs, select y textareas en divs para evitar que el texto se corte en el PDF
+              clonedDoc.querySelectorAll('input:not([type="hidden"]), textarea, select').forEach(el => {
+                if (el.style.display === 'none') return;
+                
+                // Obtener el elemento original para asegurar el valor correcto y dimensiones
+                const originalEl = document.getElementById(el.id);
+                if (!originalEl) return;
+
+                const div = clonedDoc.createElement('div');
+                div.textContent = originalEl.tagName === 'SELECT' ? (originalEl.options[originalEl.selectedIndex]?.text || '') : (originalEl.value || originalEl.placeholder || '');
+                
+                // Copiar estilos esenciales
+                div.style.width = originalEl.offsetWidth ? originalEl.offsetWidth + 'px' : '100%';
+                div.style.minHeight = originalEl.offsetHeight ? originalEl.offsetHeight + 'px' : (originalEl.tagName === 'TEXTAREA' ? '60px' : '40px');
+                div.style.padding = '10px';
+                div.style.border = '1px solid #d8cdc7';
+                div.style.borderRadius = '10px';
+                div.style.background = '#fffaf8';
+                div.style.fontFamily = 'Poppins, system-ui, -apple-system, sans-serif';
+                div.style.fontSize = '14px';
+                div.style.color = '#1e1b1a';
+                div.style.boxSizing = 'border-box';
+                div.style.display = 'flex';
+                div.style.alignItems = originalEl.tagName === 'TEXTAREA' ? 'flex-start' : 'center';
+                div.style.overflowWrap = 'break-word';
+                div.style.whiteSpace = originalEl.tagName === 'TEXTAREA' ? 'pre-wrap' : 'nowrap';
+                div.style.overflow = 'hidden';
+
+                // Estilos específicos para los inputs pequeños del encabezado (.extras)
+                if (el.closest('.extras')) {
+                  div.style.padding = '4px 8px';
+                  div.style.borderRadius = '6px';
+                  div.style.border = '1px solid #ccc';
+                  div.style.minHeight = '28px';
+                }
+
+                el.parentNode.replaceChild(div, el);
+              });
             }
         });
     }
@@ -224,8 +263,117 @@
         });
     }
 
+    function showImageModal(blob, nombreArchivo) {
+        const url = URL.createObjectURL(blob);
+        const modal = document.createElement("div");
+        modal.style.position = "fixed";
+        modal.style.top = "0";
+        modal.style.left = "0";
+        modal.style.width = "100%";
+        modal.style.height = "100%";
+        modal.style.backgroundColor = "rgba(0,0,0,0.9)";
+        modal.style.zIndex = "9999";
+        modal.style.display = "flex";
+        modal.style.flexDirection = "column";
+        modal.style.alignItems = "center";
+        modal.style.justifyContent = "center";
+
+        const img = document.createElement("img");
+        img.src = url;
+        img.style.maxWidth = "90%";
+        img.style.maxHeight = "65%";
+        img.style.borderRadius = "10px";
+        img.style.boxShadow = "0 4px 10px rgba(0,0,0,0.5)";
+        img.style.objectFit = "contain";
+
+        const msg = document.createElement("p");
+        msg.textContent = "Mantén presionada la imagen para guardarla o compartirla.";
+        msg.style.color = "#fff";
+        msg.style.marginTop = "15px";
+        msg.style.textAlign = "center";
+        msg.style.fontFamily = "Poppins, sans-serif";
+        msg.style.padding = "0 20px";
+
+        const btnContainer = document.createElement("div");
+        btnContainer.style.display = "flex";
+        btnContainer.style.gap = "10px";
+        btnContainer.style.marginTop = "20px";
+        btnContainer.style.flexWrap = "wrap";
+        btnContainer.style.justifyContent = "center";
+
+        const shareBtn = document.createElement("button");
+        shareBtn.textContent = "Compartir";
+        shareBtn.style.padding = "10px 20px";
+        shareBtn.style.border = "none";
+        shareBtn.style.borderRadius = "5px";
+        shareBtn.style.backgroundColor = "#25D366";
+        shareBtn.style.color = "#fff";
+        shareBtn.style.fontSize = "16px";
+        shareBtn.style.cursor = "pointer";
+        
+        shareBtn.onclick = () => {
+            const file = new File([blob], nombreArchivo, { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                navigator.share({
+                    files: [file],
+                    title: 'Cotización Sanare',
+                    text: 'Adjunto cotización generada.'
+                }).catch(err => console.error("Error al compartir", err));
+            }
+        };
+
+        const downloadBtn = document.createElement("button");
+        downloadBtn.textContent = "Descargar";
+        downloadBtn.style.padding = "10px 20px";
+        downloadBtn.style.border = "none";
+        downloadBtn.style.borderRadius = "5px";
+        downloadBtn.style.backgroundColor = "#4d79ff";
+        downloadBtn.style.color = "#fff";
+        downloadBtn.style.fontSize = "16px";
+        downloadBtn.style.cursor = "pointer";
+        
+        downloadBtn.onclick = () => {
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = nombreArchivo;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        const closeBtn = document.createElement("button");
+        closeBtn.textContent = "Cerrar";
+        closeBtn.style.padding = "10px 20px";
+        closeBtn.style.border = "none";
+        closeBtn.style.borderRadius = "5px";
+        closeBtn.style.backgroundColor = "#ff4d4d";
+        closeBtn.style.color = "#fff";
+        closeBtn.style.fontSize = "16px";
+        closeBtn.style.cursor = "pointer";
+
+        closeBtn.onclick = () => {
+            document.body.removeChild(modal);
+            URL.revokeObjectURL(url);
+        };
+
+        if (navigator.share) {
+            btnContainer.appendChild(shareBtn);
+        }
+        btnContainer.appendChild(downloadBtn);
+        btnContainer.appendChild(closeBtn);
+
+        modal.appendChild(img);
+        modal.appendChild(msg);
+        modal.appendChild(btnContainer);
+        document.body.appendChild(modal);
+    }
+
     if (btnImg) {
         btnImg.addEventListener("click", function() {
+          const originalText = btnImg.innerText;
+          btnImg.innerText = "Generando...";
+          btnImg.disabled = true;
+
           captureCanvas().then(function(canvas) {
              canvas.toBlob(function(blob) {
                  const nombreArchivo = getFileName("png");
@@ -236,14 +384,26 @@
                          files: [file],
                          title: 'Cotización Sanare',
                          text: 'Adjunto cotización generada.'
+                     }).then(() => {
+                         btnImg.innerText = originalText;
+                         btnImg.disabled = false;
                      }).catch((err) => {
                          console.error(err);
-                         fallbackDownload(blob, nombreArchivo);
+                         // Si falla por timeout o restricciones de Android, mostramos el modal
+                         showImageModal(blob, nombreArchivo);
+                         btnImg.innerText = originalText;
+                         btnImg.disabled = false;
                      });
                  } else {
-                     fallbackDownload(blob, nombreArchivo);
+                     showImageModal(blob, nombreArchivo);
+                     btnImg.innerText = originalText;
+                     btnImg.disabled = false;
                  }
              }, "image/png");
+          }).catch(err => {
+             console.error(err);
+             btnImg.innerText = originalText;
+             btnImg.disabled = false;
           });
         });
     }

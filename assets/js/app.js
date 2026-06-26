@@ -542,6 +542,7 @@ function initNativeQuote(){
       onclone: (clonedDoc) => {
         // Ocultar botones de acción y controles durante la captura
         clonedDoc.querySelectorAll('.quote-head-actions, .toolbar-grid, .quote-remove, .bottomnav').forEach(el => el.style.display = 'none');
+        
         // Quitar sombras y forzar vista de escritorio
         const qShell = clonedDoc.querySelector(".quote-shell");
         if(qShell){
@@ -553,6 +554,37 @@ function initNativeQuote(){
            qShell.style.padding = "24px";
            qShell.style.background = "#ffffff";
         }
+
+        // Transformar inputs, select y textareas en divs para evitar que el texto se corte
+        clonedDoc.querySelectorAll('input:not([type="hidden"]), textarea, select').forEach(el => {
+          if (el.style.display === 'none') return;
+          const originalEl = document.getElementById(el.id);
+          if (!originalEl) return;
+
+          const div = clonedDoc.createElement('div');
+          div.textContent = originalEl.tagName === 'SELECT' ? (originalEl.options[originalEl.selectedIndex]?.text || '') : (originalEl.value || originalEl.placeholder || '');
+          
+          // Copiar estilos de forma manual para evitar fallos de html2canvas con inputs
+          const compStyle = window.getComputedStyle(originalEl);
+          div.style.width = originalEl.offsetWidth ? originalEl.offsetWidth + 'px' : '100%';
+          div.style.minHeight = originalEl.offsetHeight ? originalEl.offsetHeight + 'px' : '40px';
+          div.style.padding = compStyle.padding || '10px';
+          div.style.border = compStyle.border || '1px solid #d8cdc7';
+          div.style.borderRadius = compStyle.borderRadius || '10px';
+          div.style.background = compStyle.backgroundColor || 'transparent';
+          div.style.fontFamily = compStyle.fontFamily || 'Poppins, sans-serif';
+          div.style.fontSize = compStyle.fontSize || '14px';
+          div.style.fontWeight = compStyle.fontWeight || 'normal';
+          div.style.color = compStyle.color || '#1e1b1a';
+          div.style.boxSizing = 'border-box';
+          div.style.display = 'flex';
+          div.style.alignItems = originalEl.tagName === 'TEXTAREA' ? 'flex-start' : 'center';
+          div.style.overflowWrap = 'break-word';
+          div.style.whiteSpace = originalEl.tagName === 'TEXTAREA' ? 'pre-wrap' : 'nowrap';
+          div.style.overflow = 'hidden';
+
+          el.parentNode.replaceChild(div, el);
+        });
       }
     }).then(canvas => {
       canvas.toBlob(blob => {
