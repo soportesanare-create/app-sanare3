@@ -266,72 +266,70 @@
     function showImageModal(blob, nombreArchivo) {
         const url = URL.createObjectURL(blob);
         const modal = document.createElement("div");
-        modal.style.position = "fixed";
-        modal.style.top = "0";
-        modal.style.left = "0";
-        modal.style.width = "100%";
-        modal.style.height = "100%";
-        modal.style.backgroundColor = "rgba(0,0,0,0.9)";
-        modal.style.zIndex = "9999";
-        modal.style.display = "flex";
-        modal.style.flexDirection = "column";
-        modal.style.alignItems = "center";
-        modal.style.justifyContent = "center";
+        modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;";
 
         const img = document.createElement("img");
         img.src = url;
-        img.style.maxWidth = "90%";
-        img.style.maxHeight = "65%";
-        img.style.borderRadius = "10px";
-        img.style.boxShadow = "0 4px 10px rgba(0,0,0,0.5)";
-        img.style.objectFit = "contain";
+        img.style.cssText = "max-width:100%;max-height:55vh;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.6);object-fit:contain;";
+
+        // Detectar si es Android
+        const isAndroid = /android/i.test(navigator.userAgent);
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isMobile = isAndroid || isIOS;
 
         const msg = document.createElement("p");
-        msg.textContent = "Mantén presionada la imagen para guardarla o compartirla.";
-        msg.style.color = "#fff";
-        msg.style.marginTop = "15px";
-        msg.style.textAlign = "center";
-        msg.style.fontFamily = "Poppins, sans-serif";
-        msg.style.padding = "0 20px";
+        if (isAndroid) {
+            msg.textContent = "Pulsa \"Compartir\" para enviar la imagen o \"Descargar\" para guardarla.";
+        } else if (isIOS) {
+            msg.textContent = "Mantén presionada la imagen para guardarla, o pulsa \"Compartir\".";
+        } else {
+            msg.textContent = "Descarga la imagen para guardarla o compartirla.";
+        }
+        msg.style.cssText = "color:#fff;margin:14px 0 0;text-align:center;font-family:Poppins,sans-serif;font-size:14px;padding:0 10px;";
 
         const btnContainer = document.createElement("div");
-        btnContainer.style.display = "flex";
-        btnContainer.style.gap = "10px";
-        btnContainer.style.marginTop = "20px";
-        btnContainer.style.flexWrap = "wrap";
-        btnContainer.style.justifyContent = "center";
+        btnContainer.style.cssText = "display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;justify-content:center;";
 
-        const shareBtn = document.createElement("button");
-        shareBtn.textContent = "Compartir";
-        shareBtn.style.padding = "10px 20px";
-        shareBtn.style.border = "none";
-        shareBtn.style.borderRadius = "5px";
-        shareBtn.style.backgroundColor = "#25D366";
-        shareBtn.style.color = "#fff";
-        shareBtn.style.fontSize = "16px";
-        shareBtn.style.cursor = "pointer";
+        // Botón compartir — SIEMPRE intentarlo en móvil, el clic es el user gesture
+        const canShareFiles = navigator.canShare && navigator.canShare({ files: [new File([blob], nombreArchivo, { type: 'image/png' })] });
         
-        shareBtn.onclick = () => {
-            const file = new File([blob], nombreArchivo, { type: 'image/png' });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                navigator.share({
-                    files: [file],
-                    title: 'Cotización Sanare',
-                    text: 'Adjunto cotización generada.'
-                }).catch(err => console.error("Error al compartir", err));
-            }
-        };
+        if (isMobile || canShareFiles || navigator.share) {
+            const shareBtn = document.createElement("button");
+            shareBtn.textContent = "📤 Compartir";
+            shareBtn.style.cssText = "padding:12px 22px;border:none;border-radius:8px;background:#25D366;color:#fff;font-size:16px;font-family:Poppins,sans-serif;cursor:pointer;font-weight:600;";
+            
+            shareBtn.onclick = () => {
+                const file = new File([blob], nombreArchivo, { type: 'image/png' });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    navigator.share({
+                        files: [file],
+                        title: 'Cotización Sanare',
+                        text: 'Cotización SANARÉ'
+                    }).catch(err => {
+                        if (err.name !== 'AbortError') {
+                            console.error("Error al compartir:", err);
+                            // Fallback: descargar
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = nombreArchivo;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                        }
+                    });
+                } else if (navigator.share) {
+                    // Intentar sin archivos (solo URL de datos no funciona, pero damos feedback)
+                    alert("Tu navegador no admite compartir archivos. Usa el botón Descargar.");
+                } else {
+                    alert("Compartir no disponible. Usa el botón Descargar.");
+                }
+            };
+            btnContainer.appendChild(shareBtn);
+        }
 
         const downloadBtn = document.createElement("button");
-        downloadBtn.textContent = "Descargar";
-        downloadBtn.style.padding = "10px 20px";
-        downloadBtn.style.border = "none";
-        downloadBtn.style.borderRadius = "5px";
-        downloadBtn.style.backgroundColor = "#4d79ff";
-        downloadBtn.style.color = "#fff";
-        downloadBtn.style.fontSize = "16px";
-        downloadBtn.style.cursor = "pointer";
-        
+        downloadBtn.textContent = "⬇️ Descargar";
+        downloadBtn.style.cssText = "padding:12px 22px;border:none;border-radius:8px;background:#4d79ff;color:#fff;font-size:16px;font-family:Poppins,sans-serif;cursor:pointer;font-weight:600;";
         downloadBtn.onclick = () => {
             const a = document.createElement("a");
             a.href = url;
@@ -342,23 +340,13 @@
         };
 
         const closeBtn = document.createElement("button");
-        closeBtn.textContent = "Cerrar";
-        closeBtn.style.padding = "10px 20px";
-        closeBtn.style.border = "none";
-        closeBtn.style.borderRadius = "5px";
-        closeBtn.style.backgroundColor = "#ff4d4d";
-        closeBtn.style.color = "#fff";
-        closeBtn.style.fontSize = "16px";
-        closeBtn.style.cursor = "pointer";
-
+        closeBtn.textContent = "✕ Cerrar";
+        closeBtn.style.cssText = "padding:12px 22px;border:none;border-radius:8px;background:#555;color:#fff;font-size:16px;font-family:Poppins,sans-serif;cursor:pointer;font-weight:600;";
         closeBtn.onclick = () => {
             document.body.removeChild(modal);
             URL.revokeObjectURL(url);
         };
 
-        if (navigator.share) {
-            btnContainer.appendChild(shareBtn);
-        }
         btnContainer.appendChild(downloadBtn);
         btnContainer.appendChild(closeBtn);
 
@@ -371,37 +359,21 @@
     if (btnImg) {
         btnImg.addEventListener("click", function() {
           const originalText = btnImg.innerText;
-          btnImg.innerText = "Generando...";
+          btnImg.innerText = "⏳ Generando...";
           btnImg.disabled = true;
 
           captureCanvas().then(function(canvas) {
              canvas.toBlob(function(blob) {
                  const nombreArchivo = getFileName("png");
-                 const file = new File([blob], nombreArchivo, { type: 'image/png' });
-
-                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                     navigator.share({
-                         files: [file],
-                         title: 'Cotización Sanare',
-                         text: 'Adjunto cotización generada.'
-                     }).then(() => {
-                         btnImg.innerText = originalText;
-                         btnImg.disabled = false;
-                     }).catch((err) => {
-                         console.error(err);
-                         // Si falla por timeout o restricciones de Android, mostramos el modal
-                         showImageModal(blob, nombreArchivo);
-                         btnImg.innerText = originalText;
-                         btnImg.disabled = false;
-                     });
-                 } else {
-                     showImageModal(blob, nombreArchivo);
-                     btnImg.innerText = originalText;
-                     btnImg.disabled = false;
-                 }
+                 btnImg.innerText = originalText;
+                 btnImg.disabled = false;
+                 // Siempre mostrar el modal: así el botón "Compartir" dentro del modal
+                 // es un gesto directo del usuario, lo que Android requiere para navigator.share
+                 showImageModal(blob, nombreArchivo);
              }, "image/png");
           }).catch(err => {
-             console.error(err);
+             console.error("Error al generar imagen:", err);
+             alert("Error al generar la imagen. Intenta de nuevo.");
              btnImg.innerText = originalText;
              btnImg.disabled = false;
           });
