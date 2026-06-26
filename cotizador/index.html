@@ -263,91 +263,100 @@
         });
     }
 
-    function showImageModal(blob, nombreArchivo) {
-        const url = URL.createObjectURL(blob);
-        const modal = document.createElement("div");
-        modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;";
+    function dataURLtoBlob(dataURL) {
+        const arr = dataURL.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
+        return new Blob([u8arr], { type: mime });
+    }
 
-        const img = document.createElement("img");
-        img.src = url;
-        img.style.cssText = "max-width:100%;max-height:55vh;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.6);object-fit:contain;";
-
-        // Detectar si es Android
+    function showImageModal(dataURL, nombreArchivo) {
         const isAndroid = /android/i.test(navigator.userAgent);
         const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
         const isMobile = isAndroid || isIOS;
 
+        const modal = document.createElement("div");
+        modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.93);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;overflow-y:auto;";
+
+        // La imagen usa el dataURL directamente — funciona en todos los navegadores
+        const img = document.createElement("img");
+        img.src = dataURL;
+        img.style.cssText = "max-width:100%;max-height:50vh;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.6);object-fit:contain;display:block;";
+
         const msg = document.createElement("p");
         if (isAndroid) {
-            msg.textContent = "Pulsa \"Compartir\" para enviar la imagen o \"Descargar\" para guardarla.";
+            msg.innerHTML = '📱 <strong>Android:</strong> Pulsa <strong>"Compartir"</strong> o mantén presionada la imagen para guardarla.';
         } else if (isIOS) {
-            msg.textContent = "Mantén presionada la imagen para guardarla, o pulsa \"Compartir\".";
+            msg.innerHTML = '📱 <strong>iPhone:</strong> Mantén presionada la imagen para guardarla, o pulsa <strong>"Compartir"</strong>.';
         } else {
-            msg.textContent = "Descarga la imagen para guardarla o compartirla.";
+            msg.innerHTML = 'Pulsa <strong>"Descargar"</strong> para guardar la imagen.';
         }
-        msg.style.cssText = "color:#fff;margin:14px 0 0;text-align:center;font-family:Poppins,sans-serif;font-size:14px;padding:0 10px;";
+        msg.style.cssText = "color:#fff;margin:14px 0 0;text-align:center;font-family:Poppins,sans-serif;font-size:14px;padding:0 10px;line-height:1.5;";
 
         const btnContainer = document.createElement("div");
         btnContainer.style.cssText = "display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;justify-content:center;";
 
-        // Botón compartir — SIEMPRE intentarlo en móvil, el clic es el user gesture
-        const canShareFiles = navigator.canShare && navigator.canShare({ files: [new File([blob], nombreArchivo, { type: 'image/png' })] });
-        
-        if (isMobile || canShareFiles || navigator.share) {
-            const shareBtn = document.createElement("button");
-            shareBtn.textContent = "📤 Compartir";
-            shareBtn.style.cssText = "padding:12px 22px;border:none;border-radius:8px;background:#25D366;color:#fff;font-size:16px;font-family:Poppins,sans-serif;cursor:pointer;font-weight:600;";
-            
-            shareBtn.onclick = () => {
+        // Botón Compartir — se construye el blob aquí, dentro del onclick (user gesture)
+        const shareBtn = document.createElement("button");
+        shareBtn.textContent = "📤 Compartir";
+        shareBtn.style.cssText = "padding:12px 22px;border:none;border-radius:8px;background:#25D366;color:#fff;font-size:15px;font-family:Poppins,sans-serif;cursor:pointer;font-weight:600;";
+        shareBtn.onclick = function() {
+            try {
+                const blob = dataURLtoBlob(dataURL);
                 const file = new File([blob], nombreArchivo, { type: 'image/png' });
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     navigator.share({
                         files: [file],
-                        title: 'Cotización Sanare',
+                        title: 'Cotización SANARÉ',
                         text: 'Cotización SANARÉ'
-                    }).catch(err => {
+                    }).catch(function(err) {
                         if (err.name !== 'AbortError') {
-                            console.error("Error al compartir:", err);
-                            // Fallback: descargar
-                            const a = document.createElement("a");
-                            a.href = url;
-                            a.download = nombreArchivo;
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
+                            alert('No se pudo compartir. Mantén presionada la imagen para guardarla.');
                         }
                     });
                 } else if (navigator.share) {
-                    // Intentar sin archivos (solo URL de datos no funciona, pero damos feedback)
-                    alert("Tu navegador no admite compartir archivos. Usa el botón Descargar.");
+                    navigator.share({
+                        title: 'Cotización SANARÉ',
+                        text: 'Cotización SANARÉ'
+                    }).catch(function() {});
                 } else {
-                    alert("Compartir no disponible. Usa el botón Descargar.");
+                    alert('Tu navegador no soporta compartir. Mantén presionada la imagen para guardarla.');
                 }
-            };
-            btnContainer.appendChild(shareBtn);
-        }
+            } catch(e) {
+                alert('Error: ' + e.message);
+            }
+        };
+        btnContainer.appendChild(shareBtn);
 
+        // Botón Descargar — usa un <a> con href=dataURL (funciona en Android sin blob URL)
         const downloadBtn = document.createElement("button");
         downloadBtn.textContent = "⬇️ Descargar";
-        downloadBtn.style.cssText = "padding:12px 22px;border:none;border-radius:8px;background:#4d79ff;color:#fff;font-size:16px;font-family:Poppins,sans-serif;cursor:pointer;font-weight:600;";
-        downloadBtn.onclick = () => {
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = nombreArchivo;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+        downloadBtn.style.cssText = "padding:12px 22px;border:none;border-radius:8px;background:#4d79ff;color:#fff;font-size:15px;font-family:Poppins,sans-serif;cursor:pointer;font-weight:600;";
+        downloadBtn.onclick = function() {
+            try {
+                // Método 1: dataURL directo (más compatible en Android)
+                const a = document.createElement("a");
+                a.href = dataURL;
+                a.download = nombreArchivo;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function() { document.body.removeChild(a); }, 100);
+            } catch(e) {
+                alert('No se pudo descargar. Mantén presionada la imagen para guardarla.');
+            }
         };
+        btnContainer.appendChild(downloadBtn);
 
         const closeBtn = document.createElement("button");
         closeBtn.textContent = "✕ Cerrar";
-        closeBtn.style.cssText = "padding:12px 22px;border:none;border-radius:8px;background:#555;color:#fff;font-size:16px;font-family:Poppins,sans-serif;cursor:pointer;font-weight:600;";
-        closeBtn.onclick = () => {
+        closeBtn.style.cssText = "padding:12px 22px;border:none;border-radius:8px;background:#555;color:#fff;font-size:15px;font-family:Poppins,sans-serif;cursor:pointer;font-weight:600;";
+        closeBtn.onclick = function() {
             document.body.removeChild(modal);
-            URL.revokeObjectURL(url);
         };
-
-        btnContainer.appendChild(downloadBtn);
         btnContainer.appendChild(closeBtn);
 
         modal.appendChild(img);
@@ -363,32 +372,36 @@
           btnImg.disabled = true;
 
           captureCanvas().then(function(canvas) {
-             canvas.toBlob(function(blob) {
-                 const nombreArchivo = getFileName("png");
-                 btnImg.innerText = originalText;
-                 btnImg.disabled = false;
-                 // Siempre mostrar el modal: así el botón "Compartir" dentro del modal
-                 // es un gesto directo del usuario, lo que Android requiere para navigator.share
-                 showImageModal(blob, nombreArchivo);
-             }, "image/png");
-          }).catch(err => {
-             console.error("Error al generar imagen:", err);
-             alert("Error al generar la imagen. Intenta de nuevo.");
-             btnImg.innerText = originalText;
-             btnImg.disabled = false;
+              // toDataURL es síncrono y más confiable que toBlob en Android
+              var dataURL;
+              try {
+                  dataURL = canvas.toDataURL("image/png");
+              } catch(e) {
+                  btnImg.innerText = originalText;
+                  btnImg.disabled = false;
+                  alert("Error al generar imagen: " + e.message);
+                  return;
+              }
+
+              if (!dataURL || dataURL === 'data:,') {
+                  btnImg.innerText = originalText;
+                  btnImg.disabled = false;
+                  alert("No se pudo generar la imagen. Verifica que la página esté cargada completamente.");
+                  return;
+              }
+
+              const nombreArchivo = getFileName("png");
+              btnImg.innerText = originalText;
+              btnImg.disabled = false;
+              showImageModal(dataURL, nombreArchivo);
+
+          }).catch(function(err) {
+              console.error("html2canvas error:", err);
+              btnImg.innerText = originalText;
+              btnImg.disabled = false;
+              alert("Error al capturar la pantalla: " + (err.message || err));
           });
         });
-    }
-
-    function fallbackDownload(blob, nombreArchivo) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = nombreArchivo;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
     }
   });
   </script>
